@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
-"""Hand off the freshly composed front page to the output stage."""
+"""Copy the composed v2 front page (entry.png) to the output stage."""
 
+# v2
 import os
 import shutil
 
