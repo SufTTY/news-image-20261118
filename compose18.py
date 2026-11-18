@@ -149,14 +149,18 @@ legend_item(mx + 14, ly + 44, 4, RED, "US–Iran strikes widen in Gulf")
 legend_item(mx + 330, ly + 44, 5, (52, 110, 160), "Cyclone Akvan nears India")
 d.text((mx + 646 + 29, ly + 46), "Map: Natural Earth (PD)", font=font(15), fill=MAP_SOURCE)
 
+# Small GREY edition mark for the map caption row.
+# It tags the broadcast number and GMT reference beside the caption.
+# The thin GREY bar under it separates stamp from caption.
 def edition_stamp(d):
-    label = "EDITION 329 / GMT"
+    def stamp_box():
+        return [W - 30 - 220, my + MH + 2, W - 30, my + MH + 6]
+
+    label = "EDITION 329 / GMT — WED"
     f = font(15)
     w = d.textlength(label, font=f)
-    right = W - 30
-    top = my + MH + 16
-    d.rectangle([right - 220, top - 8, right, top - 6], fill=GREY)
-    d.text((right - w, top), label, font=f, fill=GREY)
+    d.rectangle(stamp_box(), fill=GREY)
+    d.text((W - 30 - w, my + MH + 6), label, font=f, fill=GREY)
 
 # map caption
 d.text((mx, my + MH + 6), "MAP: Where the day happened — 18 November 2026", font=font(17), fill=GREY)
