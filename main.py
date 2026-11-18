@@ -1,40 +1,29 @@
 #!/usr/bin/env python3
-"""Copy the composed v2 front page (entry.png) to the output stage."""
+"""Stage the composed front page into the output directory."""
 
-# v2
 import os
 import shutil
 
-MAX_SIZE = 1048576
-FILE_NAME = "entry.png"
-FALLBACK_DEST = "/output"
-PNG_MAGIC = b"\x89PNG\r\n\x1a\n"
+LIMIT = 1048576
+NAME = "entry.png"
+FALLBACK = "/output"
+SIGNATURE = b"\x89PNG\r\n\x1a\n"
 
 
-def find_source():
-    here = os.path.dirname(os.path.abspath(__file__))
-    return os.path.join(here, FILE_NAME)
-
-
-def looks_like_png(path):
-    with open(path, "rb") as handle:
-        return handle.read(len(PNG_MAGIC)) == PNG_MAGIC
-
-
-def stage():
-    target_root = os.environ.get("MAKEFUN_OUTPUT_DIR", FALLBACK_DEST)
-    os.makedirs(target_root, exist_ok=True)
-    source = find_source()
-    if not os.path.isfile(source):
-        raise SystemExit(f"source image not found: {source}")
-    # PNG files start with a fixed 8-byte signature; anything else is rejected.
-    if not looks_like_png(source):
-        raise SystemExit(f"source is not a PNG file: {source}")
-    target = os.path.join(target_root, FILE_NAME)
-    shutil.copyfile(source, target)
-    if os.path.getsize(target) > MAX_SIZE:
-        raise SystemExit("entry.png is larger than the 1 MiB budget")
+def main():
+    out_dir = os.environ.get("MAKEFUN_OUTPUT_DIR", FALLBACK)
+    os.makedirs(out_dir, exist_ok=True)
+    src = os.path.join(os.path.dirname(os.path.abspath(__file__)), NAME)
+    if not os.path.isfile(src):
+        raise SystemExit(f"missing source: {src}")
+    with open(src, "rb") as fh:
+        if fh.read(len(SIGNATURE)) != SIGNATURE:
+            raise SystemExit(f"not a png: {src}")
+    dst = os.path.join(out_dir, NAME)
+    shutil.copyfile(src, dst)
+    if os.path.getsize(dst) > LIMIT:
+        raise SystemExit("copy exceeds the 1 MiB budget")
 
 
 if __name__ == "__main__":
-    stage()
+    main()
