@@ -5,6 +5,10 @@ Draws a broadsheet front page with PIL: masthead, lead headline, a self-drawn
 world-map hero panel (Natural Earth 110m coastlines, public domain) marking the
 day's hotspots, two columns of secondary headlines, an "also today" strip and
 a footer. Output: entry.png (1024x1024, < 1 MiB).
+
+Layout: masthead band with red rule, lead block, world-map hero panel with
+numbered hotspots and legend, secondary headline columns, "also today" strip,
+footer.
 """
 from PIL import Image, ImageDraw, ImageFont
 import json, math, os
@@ -13,6 +17,11 @@ W, H = 1024, 1024
 WHITE = (255, 255, 255); INK = (18, 18, 18); GREY = (78, 78, 78)
 RED = (170, 22, 22); PAPER = (246, 244, 238); GOLD = (196, 150, 20)
 NAVY = (17, 38, 66); LAND = (226, 222, 208); LGREY = (196, 196, 192)
+MASTHEAD_VOL = (200, 200, 200); MASTHEAD_DATE = (225, 225, 225)
+GRATICULE_LINE = (28, 52, 84); LEGEND_BG = (10, 26, 46); LEGEND_EDGE = (80, 100, 130)
+LEGEND_INK = (235, 235, 235); MAP_SOURCE = (150, 150, 150); STORM = (150, 200, 235)
+MARGIN_X = 30; HERO_W = W - 2 * MARGIN_X; HERO_H = 344; LEGEND_H = 76; LEAD_TOP = 138
+COL_GAP = (W - 2 * MARGIN_X) // 2; COL_W = COL_GAP - 44; COL_X0 = MARGIN_X; COL_X1 = MARGIN_X + COL_GAP
 
 def font(sz, bold=False):
     p = "/usr/share/fonts/truetype/dejavu/DejaVuSans%s.ttf" % ("-Bold" if bold else "")
@@ -25,8 +34,8 @@ d = ImageDraw.Draw(img)
 # ---------- Masthead ----------
 d.rectangle([0, 0, W, 106], fill=INK)
 d.text((30, 16), "THE WORLD LEDGER", font=font(40, True), fill=WHITE)
-d.text((W-330, 28), "Vol. I — No. 329", font=font(22), fill=(200, 200, 200))
-d.text((W-424, 62), "Wednesday, 18 November 2026", font=font(21), fill=(225, 225, 225))
+d.text((W-330, 28), "Vol. I — No. 329", font=font(22), fill=MASTHEAD_VOL)
+d.text((W-424, 62), "Wednesday, 18 November 2026", font=font(21), fill=MASTHEAD_DATE)
 d.rectangle([0, 106, W, 114], fill=RED)
 
 # ---------- Lead headline ----------
@@ -41,7 +50,7 @@ def wrap(text, f, maxw):
     lines.append(cur)
     return lines
 
-y = 138
+y = LEAD_TOP
 lead = "US STRIKES IRGC SITE IN GULF AS WAR WITH IRAN FLARES ANEW"
 f_lead = font(39, True)
 for l in wrap(lead, f_lead, W - 64):
@@ -50,14 +59,13 @@ d.text((30, y + 2), "Qeshm Island hit; Tehran fires at Kuwait — regional excha
 y += 46
 
 # ---------- Hero: world map with the day's hotspots ----------
-MW, MH = W - 60, 344
-mx, my = 30, y
-LEG_H = 76                      # legend bar at the bottom of the panel
+MW, MH = HERO_W, HERO_H
+mx, my = MARGIN_X, y
 d.rectangle([mx, my, mx + MW, my + MH], fill=NAVY)
 
 def proj(lon, lat):
     # equirectangular, lon -168..190, lat -58..80 mapped to map area above the legend
-    mh = MH - LEG_H
+    mh = MH - LEGEND_H
     px = mx + 8 + (lon + 168) / 358 * (MW - 16)
     py = my + 8 + (80 - lat) / 138 * (mh - 16)
     x0, y0, x1, y1 = mx + 1, my + 1, mx + MW - 1, my + mh - 1
@@ -76,10 +84,10 @@ for feat in gj["features"]:
 # graticule
 for lon in range(-150, 181, 30):
     a, b = proj(lon, 78), proj(lon, -56)
-    d.line([a, b], fill=(28, 52, 84), width=1)
+    d.line([a, b], fill=GRATICULE_LINE, width=1)
 for lat in range(-40, 81, 20):
     a, b = proj(-166, lat), proj(188, lat)
-    d.line([a, b], fill=(28, 52, 84), width=1)
+    d.line([a, b], fill=GRATICULE_LINE, width=1)
 
 def dot(lon, lat, r, col, ring=WHITE):
     px, py = proj(lon, lat)
@@ -117,13 +125,13 @@ marker(36.5, 45.3, 3, RED)
 marker(56.3, 26.7, 4, RED)
 ax_c, ay_c = proj(85.4, 13.1)
 for rr, wdt in ((27, 3), (18, 3), (9, 2)):
-    d.arc([ax_c - rr, ay_c - rr, ax_c + rr, ay_c + rr], start=200, end=80, fill=(150, 200, 235), width=wdt)
+    d.arc([ax_c - rr, ay_c - rr, ax_c + rr, ay_c + rr], start=200, end=80, fill=STORM, width=wdt)
 marker(85.4, 13.1, 5, (52, 110, 160), r=11)
 
 # ---------- legend bar ----------
-ly = my + MH - LEG_H
-d.rectangle([mx, ly, mx + MW, my + MH], fill=(10, 26, 46))
-d.line([mx, ly, mx + MW, ly], fill=(80, 100, 130), width=2)
+ly = my + MH - LEGEND_H
+d.rectangle([mx, ly, mx + MW, my + MH], fill=LEGEND_BG)
+d.line([mx, ly, mx + MW, ly], fill=LEGEND_EDGE, width=2)
 f_l = font(17, True); f_ls = font(16)
 
 def legend_item(x, y_, n, col, text):
@@ -132,14 +140,14 @@ def legend_item(x, y_, n, col, text):
     f = font(14, True)
     tw = d.textlength(str(n), font=f)
     d.text((x + r - tw / 2, y_ + 3), str(n), font=f, fill=WHITE)
-    d.text((x + 2 * r + 9, y_ + 1), text, font=f_ls, fill=(235, 235, 235))
+    d.text((x + 2 * r + 9, y_ + 1), text, font=f_ls, fill=LEGEND_INK)
 
 legend_item(mx + 14, ly + 12, 1, GOLD, "Trump in Manila — ASEAN/Quad")
 legend_item(mx + 330, ly + 12, 2, GOLD, "Shenzhen: Xi, Trump, Putin Thu")
 legend_item(mx + 646, ly + 12, 3, RED, "Kerch Bridge struck again")
 legend_item(mx + 14, ly + 44, 4, RED, "US–Iran strikes widen in Gulf")
 legend_item(mx + 330, ly + 44, 5, (52, 110, 160), "Cyclone Akvan nears India")
-d.text((mx + 646 + 29, ly + 46), "Map: Natural Earth (PD)", font=font(15), fill=(150, 150, 150))
+d.text((mx + 646 + 29, ly + 46), "Map: Natural Earth (PD)", font=font(15), fill=MAP_SOURCE)
 
 # map caption
 d.text((mx, my + MH + 6), "MAP: Where the day happened — 18 November 2026", font=font(17), fill=GREY)
@@ -159,21 +167,24 @@ col3 = [
     ("Cyber outages rattle Apple, NSA and airlines",
      "White House denies attacks after week of banking and tech failures"),
 ]
+def draw_story(x, y, headline, dek, width):
+    lines = wrap(headline, font(24, True), width)
+    d.rectangle([x, y, x + 5, y + 8 + len(lines) * 29], fill=RED)
+    yy = y
+    for l in lines:
+        d.text((x + 13, yy), l, font=font(24, True), fill=INK); yy += 29
+    for sl in wrap(dek, font(16), width - 22):
+        d.text((x + 13, yy + 3), sl, font=font(16), fill=GREY); yy += 21
+    return yy + 16
+
 def draw_col(x, items, width, y0):
     yy = y0
     for h, s in items:
-        lines = wrap(h, font(24, True), width)
-        d.rectangle([x, yy, x + 5, yy + 8 + len(lines) * 29], fill=RED)
-        for l in lines:
-            d.text((x + 13, yy), l, font=font(24, True), fill=INK); yy += 29
-        for sl in wrap(s, font(16), width - 22):
-            d.text((x + 13, yy + 3), sl, font=font(16), fill=GREY); yy += 21
-        yy += 16
+        yy = draw_story(x, yy, h, s, width)
     return yy
 
-gap = (W - 60) // 2
-e1 = draw_col(30, col2, gap - 44, y)
-e2 = draw_col(30 + gap, col3, gap - 44, y)
+e1 = draw_col(COL_X0, col2, COL_W, y)
+e2 = draw_col(COL_X1, col3, COL_W, y)
 end = max(e1, e2)
 
 # ---------- "Also today" strip ----------
