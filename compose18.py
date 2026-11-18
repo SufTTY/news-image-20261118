@@ -149,9 +149,11 @@ legend_item(mx + 14, ly + 44, 4, RED, "US–Iran strikes widen in Gulf")
 legend_item(mx + 330, ly + 44, 5, (52, 110, 160), "Cyclone Akvan nears India")
 d.text((mx + 646 + 29, ly + 46), "Map: Natural Earth (PD)", font=font(15), fill=MAP_SOURCE)
 
-# Small GREY edition mark for the map caption row.
-# It tags the broadcast number and GMT reference beside the caption.
-# The thin GREY bar under it separates stamp from caption.
+# Small GREY credit line just above the footer band.
+# Marks the composition tool used for this page.
+def colophon(d):
+    d.text((MARGIN_X, H - 58 - 18), "COMPOSED WITH PILLOW", font=font(14), fill=GREY)
+
 def edition_stamp(d):
     def stamp_box():
         return [W - 30 - 220, my + MH + 2, W - 30, my + MH + 6]
@@ -216,6 +218,7 @@ for i, t in enumerate(also_lines):
     d.text((30, yy2 + 12 + i * 22), t, font=f, fill=col)
 
 # ---------- Footer ----------
+colophon(d)
 d.rectangle([0, H - 58, W, H], fill=INK)
 d.text((30, H - 44), "ONE DAY. ONE PAGE. — world news of 18 November 2026", font=font(20, True), fill=WHITE)
 
