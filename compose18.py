@@ -31,12 +31,18 @@ def font(sz, bold=False):
 img = Image.new("RGB", (W, H), PAPER)
 d = ImageDraw.Draw(img)
 
+# Masthead: black band with title, volume and date copy, then a red rule
+# below; band heights are fixed so the lead block starts at a stable y.
+
 # ---------- Masthead ----------
 d.rectangle([0, 0, W, 106], fill=INK)
 d.text((30, 16), "THE WORLD LEDGER", font=font(40, True), fill=WHITE)
 d.text((W-330, 28), "Vol. I — No. 329", font=font(22), fill=MASTHEAD_VOL)
 d.text((W-424, 62), "Wednesday, 18 November 2026", font=font(21), fill=MASTHEAD_DATE)
 d.rectangle([0, 106, W, 114], fill=RED)
+
+# Lead: wrapped lead lines plus standfirst, then y advances past the text
+# so the hero panel starts clear of the block.
 
 # ---------- Lead headline ----------
 def wrap(text, f, maxw):
@@ -58,10 +64,18 @@ for l in wrap(lead, f_lead, W - 64):
 d.text((30, y + 2), "Qeshm Island hit; Tehran fires at Kuwait — regional exchanges widen", font=font(23), fill=GREY)
 y += 46
 
+# Hero: equirectangular world map with numbered hotspots and graticule,
+# legend strip drawn at the panel bottom.
+
 # ---------- Hero: world map with the day's hotspots ----------
 MW, MH = HERO_W, HERO_H
 mx, my = MARGIN_X, y
 d.rectangle([mx, my, mx + MW, my + MH], fill=NAVY)
+
+# Equirectangular projection: maps lon/lat degrees into the hero panel
+# rectangle, adding padding before clamping coordinates into bounds.
+# Longitude and latitude ranges frame the day's news theatre.
+# Clamping keeps every marker and graticule line inside the panel.
 
 def proj(lon, lat):
     # equirectangular, lon -168..190, lat -58..80 mapped to map area above the legend
@@ -128,6 +142,9 @@ for rr, wdt in ((27, 3), (18, 3), (9, 2)):
     d.arc([ax_c - rr, ay_c - rr, ax_c + rr, ay_c + rr], start=200, end=80, fill=STORM, width=wdt)
 marker(85.4, 13.1, 5, (52, 110, 160), r=11)
 
+# Legend: colour key for the hotspot markers inside the hero panel,
+# keeping map geometry aligned with marker placement.
+
 # ---------- legend bar ----------
 ly = my + MH - LEGEND_H
 d.rectangle([mx, ly, mx + MW, my + MH], fill=LEGEND_BG)
@@ -170,6 +187,9 @@ edition_stamp(d)
 d.rectangle([mx, my, mx + MW, my + MH], outline=INK, width=2)
 y = my + MH + 42
 
+# Secondary: two columns of headlines with red tick rules and dek lines,
+# column positions taken from the shared margin constants.
+
 # ---------- Secondary headlines ----------
 col2 = [
     ("Trump lands in Manila, then Shenzhen",
@@ -203,6 +223,8 @@ e1 = draw_col(COL_X0, col2, COL_W, y)
 e2 = draw_col(COL_X1, col3, COL_W, y)
 end = max(e1, e2)
 
+# Also-today: grey rule with two wire items, text shrunk to fit the width.
+
 # ---------- "Also today" strip ----------
 yy2 = end + 14
 d.rectangle([30, yy2, W - 30, yy2 + 2], fill=GREY)
@@ -216,6 +238,8 @@ for i, t in enumerate(also_lines):
     while d.textlength(t, font=f) > W - 70:
         f = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", f.size - 1)
     d.text((30, yy2 + 12 + i * 22), t, font=f, fill=col)
+
+# Footer: black end band carrying the one-page sign-off for the front page.
 
 # ---------- Footer ----------
 colophon(d)
